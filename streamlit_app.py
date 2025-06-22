@@ -18,10 +18,13 @@ NUM_CLASSES = 10
 IMAGE_SHAPE = (28, 28, 1)
 
 # Build decoder model
+from tensorflow.keras.models import load_model
+from tensorflow.keras.utils import custom_object_scope
+
 @st.cache_resource
 def load_decoder():
-    return tf.keras.models.load_model("decoder_model.keras")
-
+    with custom_object_scope({}):  # Add custom objects if needed
+        return load_model("decoder_model.keras", compile=False)
 # Load decoder model
 decoder = load_decoder()
 

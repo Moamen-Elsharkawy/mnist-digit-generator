@@ -24,7 +24,7 @@ st.markdown("Generate 5 handwritten digit images based on a trained Conditional 
 @st.cache_resource
 def load_decoder():
     decoder = build_decoder()
-    decoder.load_weights("decoder_weights.h5")
+    decoder.load_weights("decoder_weights.weights.h5")
     return decoder
 
 # Decoder architecture (must match training)

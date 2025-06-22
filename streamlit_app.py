@@ -9,50 +9,53 @@ Original file is located at
 import streamlit as st
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import Input, Dense, Reshape, Embedding, Concatenate, Flatten
 from tensorflow.keras.models import Model
-from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.layers import Input, Dense, Concatenate, Reshape
 
-# Set page config
-st.set_page_config(page_title="MNIST Digit Generator", layout="centered")
+# Constants
+LATENT_DIM = 2
+NUM_CLASSES = 10
+IMAGE_SHAPE = (28, 28, 1)
 
-# Title
-st.title("🧠 MNIST Digit Generator")
-st.markdown("Generate 5 handwritten digit images based on a trained Conditional Variational Autoencoder (CVAE).")
-
-# Load decoder model architecture and weights
+# Build decoder model
 @st.cache_resource
 def load_decoder():
-    decoder = build_decoder()
-    decoder.load_weights("decoder_weights.weights.h5")
-    return decoder
-
-# Decoder architecture (must match training)
-def build_decoder(latent_dim=2):
-    z_input = Input(shape=(latent_dim,))
-    label_input = Input(shape=(10,))
-    x = Concatenate()([z_input, label_input])
+    # Define the decoder architecture
+    latent_inputs = Input(shape=(LATENT_DIM,))
+    label_inputs = Input(shape=(NUM_CLASSES,))
+    x = Concatenate()([latent_inputs, label_inputs])
     x = Dense(128, activation='relu')(x)
     x = Dense(256, activation='relu')(x)
     x = Dense(28 * 28, activation='sigmoid')(x)
-    output = Reshape((28, 28))(x)
-    return Model([z_input, label_input], output)
+    outputs = Reshape(IMAGE_SHAPE)(x)
 
+    decoder = Model([latent_inputs, label_inputs], outputs, name="decoder")
+    decoder.load_weights("decoder_weights.weights.h5")
+    return decoder
+
+# Load decoder model
 decoder = load_decoder()
 
-# Digit selection
-digit = st.selectbox("Select a digit to generate", list(range(10)))
+# Streamlit UI
+st.title("MNIST Digit Generator")
+st.write("This app generates MNIST-like handwritten digits using a trained Conditional Variational Autoencoder (CVAE).")
 
-# Generate images
-if st.button("Generate Images"):
-    z_samples = np.random.normal(size=(5, 2))  # 2D latent space
-    labels = np.array([digit] * 5)
-    labels_one_hot = to_categorical(labels, num_classes=10)
+# Select digit class
+digit_class = st.selectbox("Choose a digit (0-9):", list(range(10)))
+label = tf.keras.utils.to_categorical([digit_class], NUM_CLASSES)
 
-    # Generate images
-    generated_images = decoder.predict([z_samples, labels_one_hot])
+# Latent space slider
+z1 = st.slider("Latent Dimension 1", -3.0, 3.0, 0.0)
+z2 = st.slider("Latent Dimension 2", -3.0, 3.0, 0.0)
+z_sample = np.array([[z1, z2]])
 
-    st.subheader(f"Generated images for digit: {digit}")
+# Generate image
+if st.button("Generate Image"):
+    generated_image = decoder.predict([z_sample, label])
+    generated_image = generated_image[0, :, :, 0]  # Remove batch and channel dims
+
+    st.image(generated_image, caption=f"Generated Digit: {digit_class}", width=200, clamp=True)
+
     cols = st.columns(5)
     for i in range(5):
         img = (generated_images[i] * 255).astype(np.uint8)

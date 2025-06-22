@@ -20,18 +20,7 @@ IMAGE_SHAPE = (28, 28, 1)
 # Build decoder model
 @st.cache_resource
 def load_decoder():
-    # Define the decoder architecture
-    latent_inputs = Input(shape=(LATENT_DIM,))
-    label_inputs = Input(shape=(NUM_CLASSES,))
-    x = Concatenate()([latent_inputs, label_inputs])
-    x = Dense(128, activation='relu')(x)
-    x = Dense(256, activation='relu')(x)
-    x = Dense(28 * 28, activation='sigmoid')(x)
-    outputs = Reshape(IMAGE_SHAPE)(x)
-
-    decoder = Model([latent_inputs, label_inputs], outputs, name="decoder")
-    decoder.load_weights("decoder_weights.weights.h5")
-    return decoder
+    return tf.keras.models.load_model("decoder_model.keras")
 
 # Load decoder model
 decoder = load_decoder()
